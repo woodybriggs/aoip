@@ -1,79 +1,82 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include "portaudio.h"
 #include "rtp.h"
-
-// Definitions
-#ifndef RTP_PORT
-#define RTP_PORT 8600
-#endif
-
-// Globals
-int rtp_sock_fd;
-struct sockaddr_in rtp_server_addr;
+#include "portaudio.h"
 
 
-int  audio_callback(const void                      *input,
-                    void                            *output,
-                    unsigned long                   frameCount,
-                    const  PaStreamCallbackTimeInfo *timeInfo,
-                           PaStreamCallbackFlags    statusFlags,
-                    void                            *userData);
+struct sockaddr_in source_addr, destin_addr;
+int sock_fd;
+socklen_t addr_len;
 
 
-int main(int argc, char *argv[]) {
-  // Socket Setup
-  init_addr(&rtp_server_addr, inet_addr("192.168.0.7") , RTP_PORT);
+int pa_call(const void *in_buf,
+            void *out_buf,
+            unsigned long fpb,
+            const PaStreamCallbackTimeInfo *timeinfo,
+            PaStreamCallbackFlags flags,
+            void *userdata)
+{
+  float *buf = (float *)out_buf;
 
-  rtp_sock_fd  = init_socket((struct sockaddr *) &rtp_server_addr, sizeof(rtp_server_addr));
-  if (rtp_sock_fd < 0) {
-    perror("FAILED TO CREATE SOCKET");
-    exit(1);
-  }
+  recvfrom(sock_fd, buf, (fpb * 2) * 4, 0, (struct sockaddr *) &destin_addr, &addr_len);
 
-  /*// PortAudio Setup
-  PaStream   *stream;
-  PaError    err;
-  int audio_data;
-
-  err = Pa_Initialize();
-  if (err != paNoError) printf("PortAudio Error: %s\n", Pa_GetErrorText(err));
-
-  err = Pa_OpenDefaultStream( &stream,
-                              2,
-                              2,
-                              paFloat32,
-                              48000,
-                              64,
-                              audio_callback,
-                              &audio_data );
-  if (err != paNoError) printf("PortAudio Error: %s\n", Pa_GetErrorText(err));
-
-  err = Pa_StartStream(stream);
-  if (err != paNoError) printf("PortAudio Error: %s\n", Pa_GetErrorText(err));
-
-  Pa_Sleep(10000);
-
-  err = Pa_StopStream(stream);
-  if (err != paNoError) printf("PortAudio Error: %s\n", Pa_GetErrorText(err));
-
-  err = Pa_CloseStream(stream);
-  if (err != paNoError) printf("PortAudio Error: %s\n", Pa_GetErrorText(err));
-
-  Pa_Terminate();*/
-
-  return 0;
+  return paContinue;
 }
 
 
-int audio_callback(const void                      *input,
-                   void                            *output,
-                   unsigned long                   frameCount,
-                   const  PaStreamCallbackTimeInfo *timeInfo,
-                          PaStreamCallbackFlags    statusFlags,
-                   void                            *userData) {
-  const float *in  = (const float *) input;
+int main(int argc, char *argv[])
+{
+  int data;
 
-  return paContinue;
+  /* Setup source socket */
+  init_addr(&source_addr, INADDR_ANY, DEFAULT_PORT);
+  sock_fd = init_socket((struct sockaddr *)&source_addr, sizeof(source_addr));
+  if (sock_fd < 0) { perror("FAILED TO CREATE SOCKET"); exit(1); }
+
+  /* Setup destination addr */
+  init_addr(&destin_addr, inet_addr("169.254.53.215"), DEFAULT_PORT);
+  addr_len = sizeof(struct sockaddr_storage);
+
+  /* Start Portaudio */
+   PaStream *stream;
+   PaError err;
+
+   /* Initialize library before making any other calls. */
+   err = Pa_Initialize();
+   if( err != paNoError ) goto error;
+
+   /* Open an audio I/O stream. */
+   err = Pa_OpenDefaultStream( &stream,
+                               0,          /* no input channels */
+                               2,          /* stereo output */
+                               paFloat32,  /* 32 bit floating point output */
+                               48000,
+                               16,        /* frames per buffer */
+                               pa_call,
+                               &data );
+   if( err != paNoError ) goto error;
+
+   err = Pa_StartStream( stream );
+   if( err != paNoError ) goto error;
+
+   /* Sleep for several seconds. */
+   while (1) {
+      Pa_Sleep(5000);
+   }
+
+
+   err = Pa_StopStream( stream );
+   if( err != paNoError ) goto error;
+   err = Pa_CloseStream( stream );
+   if( err != paNoError ) goto error;
+   Pa_Terminate();
+   return err;
+ error:
+   Pa_Terminate();
+   fprintf( stderr, "An error occured while using the portaudio stream\n" );
+   fprintf( stderr, "Error number: %d\n", err );
+   fprintf( stderr, "Error message: %s\n", Pa_GetErrorText( err ) );
+   return err;
+
+  return 0;
 }

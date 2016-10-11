@@ -1,9 +1,9 @@
 #include "rtp.h"
 
 
-void init_addr(struct sockaddr_in *server_addr, in_addr_t address, int port) {
+ void init_addr(struct sockaddr_in *server_addr, in_addr_t address, int port) {
   // Zero memory for initialization
-  bzero((char *) server_addr, sizeof(server_addr));
+  bzero(server_addr, sizeof(*server_addr));
 
   // Set properties for address
   server_addr->sin_family      = AF_INET;
