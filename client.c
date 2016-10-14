@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "rtp.h"
+#include "aoip.h"
 #include "portaudio.h"
 
 
@@ -9,15 +9,16 @@ int sock_fd;
 socklen_t addr_len;
 
 
-int pa_call(const void *in_buf,
-            void *out_buf,
+int pa_call(const void * in_buf,
+            void * out_buf,
             unsigned long fpb,
-            const PaStreamCallbackTimeInfo *timeinfo,
+            const PaStreamCallbackTimeInfo * timeinfo,
             PaStreamCallbackFlags flags,
-            void *userdata)
+            void * userdata)
 {
   float *buf = (float *)out_buf;
 
+  /* recvfrom is blocking. causing latency */
   recvfrom(sock_fd, buf, (fpb * 2) * 4, 0, (struct sockaddr *) &destin_addr, &addr_len);
 
   return paContinue;
@@ -30,15 +31,15 @@ int main(int argc, char *argv[])
 
   /* Setup source socket */
   init_addr(&source_addr, INADDR_ANY, DEFAULT_PORT);
-  sock_fd = init_socket((struct sockaddr *)&source_addr, sizeof(source_addr));
+  sock_fd = init_socket((struct sockaddr *) &source_addr, sizeof(source_addr));
   if (sock_fd < 0) { perror("FAILED TO CREATE SOCKET"); exit(1); }
 
   /* Setup destination addr */
-  init_addr(&destin_addr, inet_addr("169.254.53.215"), DEFAULT_PORT);
+  init_addr(&destin_addr, inet_addr("169.254.229.151"), DEFAULT_PORT);
   addr_len = sizeof(struct sockaddr_storage);
 
   /* Start Portaudio */
-   PaStream *stream;
+   PaStream * stream;
    PaError err;
 
    /* Initialize library before making any other calls. */
@@ -51,7 +52,7 @@ int main(int argc, char *argv[])
                                2,          /* stereo output */
                                paFloat32,  /* 32 bit floating point output */
                                48000,
-                               16,        /* frames per buffer */
+                               256,        /* frames per buffer */
                                pa_call,
                                &data );
    if( err != paNoError ) goto error;

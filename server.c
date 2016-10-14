@@ -1,21 +1,28 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "rtp.h"
+#include "aoip.h"
 #include "portaudio.h"
 
 struct sockaddr_in source_addr, destin_addr;
 int sock_fd;
 
-int pa_call(const void *in_buf,
-            void *out_buf,
+int pa_call(const void * in_buf,
+            void * out_buf,
             unsigned long fpb,
-            const PaStreamCallbackTimeInfo *timeinfo,
+            const PaStreamCallbackTimeInfo * timeinfo,
             PaStreamCallbackFlags flags,
-            void *userdata)
+            void * userdata)
 {
-  float *buf = (float *) in_buf;
+  /* @NOTE Redundant  */
+  /*float *buf = (float *) in_buf;*/
 
-  sendto(sock_fd, in_buf, (fpb * 2) * 4, 0, (struct sockaddr *) &destin_addr, sizeof(destin_addr));
+  /* Potentially a blocking function */
+  sendto( sock_fd,                          // Socket to use
+          in_buf,                           // Pointer to data to send
+          (fpb * 2) * 4,                    // Total size of data
+          0,                                // Flags
+          (struct sockaddr *) &destin_addr, // Address to send to
+          sizeof(destin_addr) );            // Size of address struct
 
   return paContinue;
 }
@@ -26,11 +33,11 @@ int main(int argc, char *argv[])
 
   /* Setup source socket */
   init_addr(&source_addr, INADDR_ANY, DEFAULT_PORT);
-  sock_fd = init_socket((struct sockaddr *)&source_addr, sizeof(source_addr));
+  sock_fd = init_socket((struct sockaddr *) &source_addr, sizeof(source_addr));
   if (sock_fd < 0) { perror("FAILED TO CREATE SOCKET"); exit(1); }
 
   /* Setup destination addr */
-  init_addr(&destin_addr, inet_addr("169.254.99.147"), DEFAULT_PORT);
+  init_addr(&destin_addr, inet_addr("169.254.199.17"), DEFAULT_PORT);
 
 
  /* Start Portaudio */
@@ -47,7 +54,7 @@ int main(int argc, char *argv[])
                               0,          /* stereo output */
                               paFloat32,  /* 32 bit floating point output */
                               48000,
-                              16,        /* frames per buffer */
+                              256,        /* frames per buffer */
                               pa_call,
                               &data );
   if( err != paNoError ) goto error;
@@ -55,7 +62,7 @@ int main(int argc, char *argv[])
   err = Pa_StartStream( stream );
   if( err != paNoError ) goto error;
 
-  /* Sleep for several seconds. */
+  /* Sleep for ever */
   while (1) {
     Pa_Sleep(5000);
   }

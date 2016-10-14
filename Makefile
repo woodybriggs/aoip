@@ -1,15 +1,15 @@
 CC = gcc
 
-all: librtp server client
+all: libaoip server client
 
-librtp: rtp.c
-	$(CC) -c -o librtp.a rtp.c
+libaoip: aoip.c
+	$(CC) -c -o libaoip.a aoip.c
 
 server: server.c
-	$(CC) -o server server.c -L. -lportaudio -lrtp
+	$(CC) -o server server.c -L. -lportaudio -laoip
 
 client: client.c
-	$(CC) -o client client.c -L. -lportaudio -lrtp
+	$(CC) -o client client.c -L. -lportaudio -laoip
 
 clean:
 	rm -f server.o server
