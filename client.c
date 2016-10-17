@@ -27,8 +27,6 @@ int pa_call(const void * in_buf,
 
 int main(int argc, char *argv[])
 {
-  int data;
-
   /* Setup source socket */
   init_addr(&source_addr, INADDR_ANY, DEFAULT_PORT);
   sock_fd = init_socket((struct sockaddr *) &source_addr, sizeof(source_addr));
@@ -51,10 +49,10 @@ int main(int argc, char *argv[])
                                0,          /* no input channels */
                                2,          /* stereo output */
                                paFloat32,  /* 32 bit floating point output */
-                               48000,
+                               48000,      /* Sample rate */
                                256,        /* frames per buffer */
                                pa_call,
-                               &data );
+                               NULL );
    if( err != paNoError ) goto error;
 
    err = Pa_StartStream( stream );

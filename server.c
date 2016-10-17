@@ -29,8 +29,6 @@ int pa_call(const void * in_buf,
 
 int main(int argc, char *argv[])
 {
-  int data;
-
   /* Setup source socket */
   init_addr(&source_addr, INADDR_ANY, DEFAULT_PORT);
   sock_fd = init_socket((struct sockaddr *) &source_addr, sizeof(source_addr));
@@ -38,7 +36,6 @@ int main(int argc, char *argv[])
 
   /* Setup destination addr */
   init_addr(&destin_addr, inet_addr("169.254.199.17"), DEFAULT_PORT);
-
 
  /* Start Portaudio */
   PaStream *stream;
@@ -50,15 +47,16 @@ int main(int argc, char *argv[])
 
   /* Open an audio I/O stream. */
   err = Pa_OpenDefaultStream( &stream,
-                              2,          /* no input channels */
-                              0,          /* stereo output */
+                              2,          /* No input channels */
+                              0,          /* Stereo output */
                               paFloat32,  /* 32 bit floating point output */
-                              48000,
-                              256,        /* frames per buffer */
-                              pa_call,
-                              &data );
+                              48000,      /* Sample rate */
+                              256,        /* Frames per buffer */
+                              pa_call,    /* Callback function */
+                              NULL );
   if( err != paNoError ) goto error;
 
+  /* Initiate PortAudio stream */
   err = Pa_StartStream( stream );
   if( err != paNoError ) goto error;
 
