@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
   if (sock_fd < 0) { perror("FAILED TO CREATE SOCKET"); exit(1); }
 
   /* Setup destination addr */
-  init_addr(&destin_addr, inet_addr("169.254.199.17"), DEFAULT_PORT);
+  init_addr(&destin_addr, inet_addr("192.168.0.41"), DEFAULT_PORT);
 
  /* Start Portaudio */
   PaStream *stream;

@@ -9,6 +9,11 @@
 #define DEFAULT_PORT 8600
 #endif
 
+struct sockets {
+  int    file_des[];
+  void * data_buffer[];
+}
+
 typedef struct {
   double timestamp;
 } aoip_header;
