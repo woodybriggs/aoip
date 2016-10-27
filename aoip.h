@@ -9,10 +9,10 @@
 #define DEFAULT_PORT 8600
 #endif
 
-struct sockets {
+typedef struct {
   int    file_des[];
   void * data_buffer[];
-}
+} session;
 
 typedef struct {
   double timestamp;

@@ -3,8 +3,8 @@
 #include "aoip.h"
 #include "portaudio.h"
 
-struct sockaddr_in source_addr, destin_addr;
-int sock_fd;
+struct sockaddr_in coms_addr;
+int coms_sock_fd;
 
 int pa_call(const void * in_buf,
             void * out_buf,
@@ -13,29 +13,29 @@ int pa_call(const void * in_buf,
             PaStreamCallbackFlags flags,
             void * userdata)
 {
-  /* @NOTE Redundant  */
-  /*float *buf = (float *) in_buf;*/
-
-  /* Potentially a blocking function */
-  sendto( sock_fd,                          // Socket to use
-          in_buf,                           // Pointer to data to send
-          (fpb * 2) * 4,                    // Total size of data
-          0,                                // Flags
-          (struct sockaddr *) &destin_addr, // Address to send to
-          sizeof(destin_addr) );            // Size of address struct
-
+  /* Fill Buffers */
   return paContinue;
 }
 
 int main(int argc, char *argv[])
 {
-  /* Setup source socket */
-  init_addr(&source_addr, INADDR_ANY, DEFAULT_PORT);
-  sock_fd = init_socket((struct sockaddr *) &source_addr, sizeof(source_addr));
-  if (sock_fd < 0) { perror("FAILED TO CREATE SOCKET"); exit(1); }
+  /* Setup default coms on TCP */
+  coms_sock_fd = socket(AF_INET, SOCK_STREAM, 0);
+  if (coms_sock_fd < 0) {
+    perror("ERROR opening socket");
+    exit(1);
+  }
 
-  /* Setup destination addr */
-  init_addr(&destin_addr, inet_addr("192.168.0.41"), DEFAULT_PORT);
+bind_socket:
+  int port = DEFAULT_PORT;
+  init_addr(&coms_addr, INADDR_ANY, port);
+  if (bind(coms_sock_fd, (struct sockaddr *)&coms_addr, sizeof(coms_addr)) < 0) {
+    /* if bind returns not bound then try new port */
+    port++;
+    goto bind_socket;
+  }
+
+
 
  /* Start Portaudio */
   PaStream *stream;
